@@ -1,0 +1,26 @@
+{
+  "name": "@fortifico/framework",
+  "version": "0.1.0",
+  "description": "The Fortis Framework.",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DamenH/fortis.git"
+  },
+  "keywords": [],
+  "author": "DamenH",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^10.12.18"
+  },
+  "dependencies": {
+    "reflect-metadata": "^0.1.13"
+  },
+  "bugs": {
+    "url": "https://github.com/DamenH/fortis/issues"
+  },
+  "homepage": "https://github.com/DamenH/fortis#readme"
+}
