@@ -1,7 +1,8 @@
 {
   "name": "@fortifico/framework",
   "version": "0.1.0",
-  "description": "The Fortis Framework.",
+  "description": "The Fortifico Framework.",
+  "type": "modules",
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w"
@@ -20,7 +21,7 @@
     "reflect-metadata": "^0.1.13"
   },
   "bugs": {
-    "url": "https://github.com/DamenH/fortis/issues"
+    "url": "https://github.com/fortifico/framework/issues"
   },
-  "homepage": "https://github.com/DamenH/fortis#readme"
+  "homepage": "https://github.com/fortifico/framework"
 }
