@@ -1,6 +1,6 @@
 import { Container as ContainerContract } from "../Interfaces/Container/Container"
 import { Closure, Callable } from "../Interfaces/Types"
-import "./node_modules/reflect-metadata";
+import "reflect-metadata";
 
 
 export class Container implements ContainerContract
