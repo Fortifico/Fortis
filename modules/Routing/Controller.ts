@@ -1,4 +1,4 @@
-import { Closure } from "../interfaces/Types";
+import { Closure } from "../Interfaces/Types";
 
 export class Controller
 {
