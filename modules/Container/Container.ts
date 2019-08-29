@@ -5,6 +5,9 @@ import "reflect-metadata";
 
 export class Container implements ContainerContract
 {
+
+    protected instances: ContainerContract[] = [];
+
     protected bindings: ContainerArray = {}
 
     protected methodBindings: string[] = []
@@ -55,7 +58,7 @@ export class Container implements ContainerContract
         return null;
     }
 
-    public singleton(abstract: string, concrete: string)
+    public singleton(abstract: string, concrete: Callable)
     {
 
     }

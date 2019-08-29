@@ -5,7 +5,7 @@ export class Controller
 
     protected middlewareArray: any[] = [];
 
-    public middleware(middleware: Closure): any
+    public middleware(middleware: Closure | string): any
     {
 
     }

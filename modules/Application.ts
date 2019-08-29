@@ -22,7 +22,7 @@ export class Application extends Container
         
     }
 
-    public start(): void
+    public start()
     {
         console.log("Fortifico Console Application Starting");
     }

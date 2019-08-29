@@ -23,7 +23,7 @@ export class Router
 
     public group(attributes: any[], callback: Closure)
     {
-
+        
     }
 
     protected updateGroupStack(attributes: any[])
