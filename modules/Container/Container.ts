@@ -63,7 +63,7 @@ export class Container implements ContainerContract
 
     }
 
-    public static Method(classTarget: any, method: string | symbol)
+    public static Inject(classTarget: any, method: string | symbol)
     {
         let classDotMethod = `${classTarget.constructor.name}.${String(method)}`;
         let arr: string[] = [];
