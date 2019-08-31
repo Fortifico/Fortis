@@ -29,7 +29,7 @@ export class Container implements ContainerContract
     protected resolve(abstract: string, parameters: any[] = []): any
     {
         let concrete = this.bindings[abstract];
-        if(!concrete)
+        if (!concrete)
         {
             return null;
         }
@@ -44,10 +44,10 @@ export class Container implements ContainerContract
         if (Container.methodSignatures[`Function.${concrete.name}`] !== null)
         {
             let params: any = [];
-            for(let type of Container.methodSignatures[`Function.${concrete.name}`])
+            for (let type of Container.methodSignatures[`Function.${concrete.name}`])
             {
                 let param = this.make(type);
-                if(param === null)
+                if (param === null)
                 {
                     return;
                 }

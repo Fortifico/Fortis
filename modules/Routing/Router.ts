@@ -21,9 +21,10 @@ export class Router
     }
 
 
-    public group(attributes: any[], callback: Closure)
+    public group(attributes: any[], callback: any)
     {
-        
+        this.groupStack = attributes;
+        callback(this);
     }
 
     protected updateGroupStack(attributes: any[])
@@ -55,26 +56,29 @@ export class Router
     public addRoute(method: any[] | string, uri: string, action: any)
     {
 
+        action = this.parseAction(action);
+
+        let attributes = null;
+
+        if (this.hasGroupStack())
+        {
+            attributes = this.mergeWithLastGroup([]);
+        }
+
     }
 
     protected parseAction(action: any)
     {
-        // if (is_string(action))
-        // {
-        //     return ['uses' => action];
-        // } elseif(!is_array(action)) {
-        //     return [action];
-        // }
-        // if (isset(action['middleware']) && is_string(action['middleware']))
-        // {
-        //     action['middleware'] = explode('|', action['middleware']);
-        // }
-        // return action;
+        if (typeof action == 'string')
+        {
+            //return ['uses' => action];
+        }
+        return action;
     }
 
     public hasGroupStack()
     {
-
+        return this.groupStack.length !== 0;
     }
 
     protected mergeGroupAttributes(action: any[], attributes: any[])
@@ -110,7 +114,9 @@ export class Router
 
     public get(uri: string, action: any)
     {
+        this.addRoute('GET', uri, action);
 
+        return this;
     }
 
     public post(uri: string, action: any)
@@ -140,7 +146,7 @@ export class Router
 
     public getRoutes()
     {
-        
+
     }
 
 

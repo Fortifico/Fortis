@@ -13,7 +13,7 @@ export class Kernel
 
     handle(request: IncomingMessage)
     {
-        console.log(request.url);
+        //console.log(request.url);
 
         return request.url;
 
