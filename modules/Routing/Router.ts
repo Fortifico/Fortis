@@ -1,6 +1,6 @@
 import { Closure, Callable } from "../Interfaces/Types";
 import { Application } from "../Application";
-// import {Route } from "./Route";
+// import { Route } from "./Route";
 // import { Controller } from "./Controller";
 
 
@@ -9,9 +9,10 @@ export class Router
 
     public app: Application;
 
-
     protected groupStack: any[] = [];
+
     protected routes: any[] = [];
+
     protected namedRoutes: any[] = [];
 
 
@@ -21,10 +22,18 @@ export class Router
     }
 
 
-    public group(attributes: any[], callback: any)
+    public group(attributes: any[], callback: Closure)
     {
+        // if(attributes["middleware"] !== null && typeof attributes["middleware"] === "string")
+        // {
+        //     attributes["middleware"] =
+        // }
+
         this.groupStack = attributes;
-        callback(this);
+        callback.call(null, this)
+
+        this.groupStack.pop;
+
     }
 
     protected updateGroupStack(attributes: any[])
@@ -40,7 +49,7 @@ export class Router
 
     protected mergeWithLastGroup(newAttributes: any[])
     {
-
+        return this.mergeGroup(newAttributes, this.groupStack[this.groupStack.length]);
     }
 
     protected static formatUsesPrefix(newAttributes: any[], oldAttributes: any[])
@@ -53,10 +62,10 @@ export class Router
 
     }
 
-    public addRoute(method: any[] | string, uri: string, action: any)
+    public addRoute(method: any[] | string, uri: string, action: Action)
     {
 
-        action = this.parseAction(action);
+        let parsedAction = this.parseAction(action);
 
         let attributes = null;
 
@@ -67,13 +76,23 @@ export class Router
 
     }
 
-    protected parseAction(action: any)
+    protected parseAction(action: Action)
     {
-        if (typeof action == 'string')
+        let parsedAction: Action = new Map();
+        if (typeof action == "string")
         {
-            //return ['uses' => action];
+            return parsedAction.set("uses", action)
+        } else if (!(action instanceof Map))
+        {
+            return parsedAction.set(0, action)
         }
-        return action;
+
+        // if(action.has("middlware") && typeof action.get("middleware") == 'string')
+        // {
+        //     parsedAction.set("middleware", action.get("middleware").split("|"));
+        // }
+
+        return parsedAction;
     }
 
     public hasGroupStack()
@@ -112,7 +131,7 @@ export class Router
 
     }
 
-    public get(uri: string, action: any)
+    public get(uri: string, action: Action)
     {
         this.addRoute('GET', uri, action);
 
@@ -151,3 +170,5 @@ export class Router
 
 
 }
+
+export type Action = string | Callable | Map<string | number, string | Callable>;
