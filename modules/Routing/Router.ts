@@ -1,4 +1,4 @@
-import { Closure, Callable } from "../Interfaces/Types";
+import { Closure, Callable, Action, Attributes } from "../Interfaces/Types";
 import { Application } from "../Application";
 // import { Route } from "./Route";
 // import { Controller } from "./Controller";
@@ -9,11 +9,11 @@ export class Router
 
     public app: Application;
 
-    protected groupStack: any[] = [];
+    protected groupStack: Attributes = new Map();
 
-    protected routes: any[] = [];
+    protected routes: Map<string, Map<string, Action>> = new Map();
 
-    protected namedRoutes: any[] = [];
+    protected namedRoutes: Map<string, string> = new Map();
 
 
     constructor(app: Application)
@@ -22,58 +22,96 @@ export class Router
     }
 
 
-    public group(attributes: any[], callback: Closure)
+    public group(attributes: Attributes, callback: Closure)
     {
-        // if(attributes["middleware"] !== null && typeof attributes["middleware"] === "string")
-        // {
-        //     attributes["middleware"] =
-        // }
+        let middleware = attributes.get("middleware");
+
+        if (middleware && typeof middleware === "string")
+        {
+            attributes.set("middleware", middleware.split("|"));
+        }
+
+        this.updateGroupStack(attributes);
 
         this.groupStack = attributes;
         callback.call(null, this)
 
-        this.groupStack.pop;
+        // let lastKey = Array.from(this.groupStack).pop();
+        // console.log(lastKey);
+        //this.groupStack.delete(lastKey)
 
     }
 
-    protected updateGroupStack(attributes: any[])
+    protected updateGroupStack(attributes: Attributes)
     {
+        if (this.groupStack.size !== 0)
+        {
+            attributes = this.mergeWithLastGroup(attributes);
+        }
 
+        this.groupStack = new Map([...this.groupStack, ...attributes]);
     }
 
-    public mergeGroup(newAttributes: any[], oldAttributes: any[])
+    public mergeGroup(newAttributes: Attributes, oldAttributes: Attributes)
     {
+        newAttributes.set("namespace", Router.formatUsesPrefix(newAttributes, oldAttributes));
 
+        newAttributes.set("prefix", Router.formatGroupPrefix(newAttributes, oldAttributes));
 
+        if (newAttributes.has("domain"))
+        {
+            oldAttributes.delete("domain");
+        }
+
+        // if(oldAttributes.has("as"))
+        // {
+        //     newAttributes.set("as", oldAttributes.get("as").(newAttributes.has("as") ? "."+newAttributes.get("as": "")));
+        // }
+
+        let oldSuffix = oldAttributes.get("suffix")
+
+        if (oldSuffix && !(newAttributes.has("suffix")))
+        {
+            newAttributes.set("suffix", oldSuffix);
+        }
+
+        return new Map([...oldAttributes, ...newAttributes]);
     }
 
-    protected mergeWithLastGroup(newAttributes: any[])
+    protected mergeWithLastGroup(newAttributes: Attributes)
     {
-        return this.mergeGroup(newAttributes, this.groupStack[this.groupStack.length]);
+        return this.mergeGroup(newAttributes, this.groupStack);
     }
 
-    protected static formatUsesPrefix(newAttributes: any[], oldAttributes: any[])
+    protected static formatUsesPrefix(newAttributes: Attributes, oldAttributes: Attributes): string | null
     {
-
+        return null;
     }
 
-    protected static formatGroupPrefix(newAttributes: any[], oldAttributes: any[])
+    protected static formatGroupPrefix(newAttributes: Attributes, oldAttributes: Attributes): string | null
     {
-
+        return null;
     }
 
-    public addRoute(method: any[] | string, uri: string, action: Action)
+    public addRoute(method: string, uri: string, action: Action)
     {
 
         let parsedAction = this.parseAction(action);
 
         let attributes = null;
 
-        if (this.hasGroupStack())
-        {
-            attributes = this.mergeWithLastGroup([]);
-        }
+        // if (this.hasGroupStack())
+        // {
+        //     attributes = this.mergeWithLastGroup(new Map());
+        // }
 
+        // action 
+
+        uri = "/" + uri.trim();
+        
+        let route = new Map<string, string | Action>();
+        route.set("method", method).set("uri", uri).set("action", action);
+        this.routes.set(method+uri, route);
     }
 
     protected parseAction(action: Action)
@@ -97,7 +135,7 @@ export class Router
 
     public hasGroupStack()
     {
-        return this.groupStack.length !== 0;
+        return this.groupStack.size !== 0;
     }
 
     protected mergeGroupAttributes(action: any[], attributes: any[])
@@ -171,4 +209,3 @@ export class Router
 
 }
 
-export type Action = string | Callable | Map<string | number, string | Callable>;
