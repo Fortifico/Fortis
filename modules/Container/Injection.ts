@@ -1,4 +1,4 @@
-export function Inject(target: any, propertyName: string)
+export function Inject(target: unknown, propertyName: string)
 {
 
 }

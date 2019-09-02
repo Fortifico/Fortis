@@ -5,7 +5,7 @@ export class View
     {
     }
 
-    with(data: any)
+    with(data: unknown)
     {
         return new View(`<h1>${this.page}</h1><br/><h2>${data}</h2>`);
     }

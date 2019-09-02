@@ -138,12 +138,12 @@ export class Router
         return this.groupStack.size !== 0;
     }
 
-    protected mergeGroupAttributes(action: any[], attributes: any[])
+    protected mergeGroupAttributes(action: unknown[], attributes: unknown[])
     {
 
     }
 
-    protected mergeNamespaceGroup(action: any[], namespace = null)
+    protected mergeNamespaceGroup(action: unknown[], namespace = null)
     {
 
     }
@@ -154,17 +154,17 @@ export class Router
     //     //     ? namespace.'\\'.class : class;
     // }
 
-    protected mergeMiddlewareGroup(action: any[], middleware = null)
+    protected mergeMiddlewareGroup(action: unknown[], middleware = null)
     {
 
     }
 
-    protected mergeAsGroup(action: any[], as = null)
+    protected mergeAsGroup(action: unknown[], as = null)
     {
 
     }
 
-    public head(uri: string, action: any)
+    public head(uri: string, action: unknown)
     {
 
     }
@@ -176,27 +176,27 @@ export class Router
         return this;
     }
 
-    public post(uri: string, action: any)
+    public post(uri: string, action: unknown)
     {
 
     }
 
-    public put(uri: string, action: any)
+    public put(uri: string, action: unknown)
     {
 
     }
 
-    public patch(uri: string, action: any)
+    public patch(uri: string, action: unknown)
     {
 
     }
 
-    public delete(uri: string, action: any)
+    public delete(uri: string, action: unknown)
     {
 
     }
 
-    public options(uri: string, action: any)
+    public options(uri: string, action: unknown)
     {
 
     }

@@ -1,5 +1,5 @@
 import { Container as ContainerContract } from "../Interfaces/Container/Container"
-import { Closure, Callable } from "../Interfaces/Types"
+import { Closure, Callable, ClassConstructor } from "../Interfaces/Types"
 import "reflect-metadata";
 
 
@@ -21,12 +21,12 @@ export class Container implements ContainerContract
         this.bindings[abstract] = concrete;
     }
 
-    public make(abstract: string, parameters: any[] = []): any
+    public make<T>(abstract: string, parameters: unknown[] = []): T | null
     {
-        return this.resolve(abstract, parameters)
+        return this.resolve<T>(abstract, parameters)
     }
 
-    protected resolve(abstract: string, parameters: any[] = []): any
+    protected resolve<T>(abstract: string, parameters: unknown[] = []): T | null
     {
         let concrete = this.bindings[abstract];
         if (!concrete)
@@ -43,13 +43,13 @@ export class Container implements ContainerContract
         }
         if (Container.methodSignatures[`Function.${concrete.name}`] !== null)
         {
-            let params: any = [];
+            let params: any[] = [];
             for (let type of Container.methodSignatures[`Function.${concrete.name}`])
             {
                 let param = this.make(type);
                 if (param === null)
                 {
-                    return;
+                    return null;
                 }
                 params.push(param);
             }
@@ -63,7 +63,7 @@ export class Container implements ContainerContract
 
     }
 
-    public static Inject(classTarget: any, method: string | symbol)
+    public static Inject(classTarget: ClassConstructor, method: string | symbol)
     {
         let classDotMethod = `${classTarget.constructor.name}.${String(method)}`;
         let arr: string[] = [];
@@ -74,7 +74,7 @@ export class Container implements ContainerContract
         Container.methodSignatures[classDotMethod] = arr;
     }
 
-    public static Class(classTarget: any)
+    public static Class(classTarget: ClassConstructor)
     {
         let className = classTarget.constructor.name;
         let arr: string[] = [];
