@@ -107,7 +107,7 @@ export class Router
 
         // action 
 
-        uri = "/" + uri.trim();
+        uri = uri.trim();
         
         let route = new Map<string, string | Action>();
         route.set("method", method).set("uri", uri).set("action", action);
@@ -203,6 +203,7 @@ export class Router
 
     public getRoutes()
     {
+        return this.routes;
 
     }
 

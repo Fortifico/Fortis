@@ -1,5 +1,5 @@
 import { Container as ContainerContract } from "../Interfaces/Container/Container"
-import { Closure, Callable, ClassConstructor } from "../Interfaces/Types"
+   import { Closure, Callable, ClassConstructor } from "../Interfaces/Types"
 import "reflect-metadata";
 
 
@@ -29,6 +29,7 @@ export class Container implements ContainerContract
     protected resolve<T>(abstract: string, parameters: unknown[] = []): T | null
     {
         let concrete = this.bindings[abstract];
+
         if (!concrete)
         {
             return null;
@@ -63,7 +64,7 @@ export class Container implements ContainerContract
 
     }
 
-    public static Inject(classTarget: ClassConstructor, method: string | symbol)
+    public static Inject(classTarget: any, method: string | symbol)
     {
         let classDotMethod = `${classTarget.constructor.name}.${String(method)}`;
         let arr: string[] = [];
@@ -74,7 +75,7 @@ export class Container implements ContainerContract
         Container.methodSignatures[classDotMethod] = arr;
     }
 
-    public static Class(classTarget: ClassConstructor)
+    public static Class(classTarget: any)
     {
         let className = classTarget.constructor.name;
         let arr: string[] = [];
