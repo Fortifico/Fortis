@@ -1,8 +1,8 @@
-import { Closure, Callable, Action, Attributes } from "../Interfaces/Types";
+import { IncomingMessage } from "http";
 import { Application } from "../Application";
-// import { Route } from "./Route";
-// import { Controller } from "./Controller";
-
+import { Closure, Callable, Action, Attributes } from "../Interfaces/Types";
+import { Controller } from "./Controller";
+import { View } from "../View";
 
 export class Router
 {
@@ -19,6 +19,9 @@ export class Router
     constructor(app: Application)
     {
         this.app = app;
+
+        // tempory before public folder is added to route resolution.
+        this.get("/favicon.ico", () => { return "favicon.ico" });
     }
 
 
@@ -38,7 +41,7 @@ export class Router
 
         // let lastKey = Array.from(this.groupStack).pop();
         // console.log(lastKey);
-        //this.groupStack.delete(lastKey)
+        // this.groupStack.delete(lastKey)
 
     }
 
@@ -78,6 +81,58 @@ export class Router
         return new Map([...oldAttributes, ...newAttributes]);
     }
 
+    public dispatch(request: IncomingMessage)
+    {
+        let route = this.matchRoute(request);
+
+        if (!route) return "Error 404";
+
+        return this.handleFoundRoute(route)
+    }
+
+    protected matchRoute(request: IncomingMessage)
+    {
+        let method = request.method;
+        let url = request.url;
+        if (typeof method !== "string") return;
+        if (typeof url !== "string") return;
+
+        return this.getRoutes().get(method + url);
+    }
+
+    protected handleFoundRoute(route: Map<string, Action>)
+    {
+        let action = route.get("action");
+
+        let response;
+
+        if (typeof action === 'function')
+        {
+            let params
+            response = action.call(null);
+        }
+
+        if (typeof action === 'string')
+        {
+            let controllerArray = action.split("@");
+
+            let controllerName = controllerArray[0];
+            let methodName = controllerArray[1];
+
+            let controller: any = this.app.make(`${controllerName}`);
+
+            response = controller[methodName]();
+
+        }
+
+        if (response instanceof View)
+        {
+            response = response.toString();
+        }
+
+        return response
+    }
+
     protected mergeWithLastGroup(newAttributes: Attributes)
     {
         return this.mergeGroup(newAttributes, this.groupStack);
@@ -108,10 +163,10 @@ export class Router
         // action 
 
         uri = uri.trim();
-        
+
         let route = new Map<string, string | Action>();
         route.set("method", method).set("uri", uri).set("action", action);
-        this.routes.set(method+uri, route);
+        this.routes.set(method + uri, route);
     }
 
     protected parseAction(action: Action)
