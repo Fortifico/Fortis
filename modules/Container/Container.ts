@@ -1,100 +1,86 @@
-import { Container as ContainerContract } from "../Interfaces/Container/Container"
-   import { Closure, Callable, ClassConstructor } from "../Interfaces/Types"
-import "reflect-metadata";
+import { Callback, ClassConstructor, ImportMap, Closure } from "../Interfaces/types";
 
-
-export class Container implements ContainerContract
+export class Container
 {
 
-    protected instances: ContainerContract[] = [];
+    private bindings: Map<string, Closure | ClassConstructor> = new Map();
 
-    protected bindings: ContainerArray = {}
+    private methodBindings: Map<string, Closure> = new Map();
 
-    protected methodBindings: string[] = []
-
-    protected static constructorSignatures: MethodSignatureArray = {};
-
-    protected static methodSignatures: MethodSignatureArray = {};
-
-    public bind(abstract: string, concrete: Callable): void
+    public bind(abstract: string, concrete: Closure | ClassConstructor )
     {
-        this.bindings[abstract] = concrete;
+        this.bindings.set(abstract, concrete);
     }
 
-    public make<T>(abstract: string, parameters: unknown[] = []): T | null
+    public bindMethod(method: string, callback: Closure)
     {
-        return this.resolve<T>(abstract, parameters)
+        this.methodBindings.set(method, callback)
     }
 
-    protected resolve<T>(abstract: string, parameters: unknown[] = []): T | null
+    public singleton(abstract: string)
     {
-        let concrete = this.bindings[abstract];
-
-        if (!concrete)
-        {
-            return null;
-        }
-        if (concrete.name.length === 0)
-        {
-            return concrete();
-        }
-        if (Container.methodSignatures[`${abstract}.${concrete}`])
-        {
-            console.log(`${abstract}.${concrete.name}`)
-        }
-        if (Container.methodSignatures[`Function.${concrete.name}`] !== null)
-        {
-            let params: any[] = [];
-            for (let type of Container.methodSignatures[`Function.${concrete.name}`])
-            {
-                let param = this.make(type);
-                if (param === null)
-                {
-                    return null;
-                }
-                params.push(param);
-            }
-            concrete.apply(this, params);
-        }
-        return null;
     }
 
-    public singleton(abstract: string, concrete: Callable)
+    public make(abstract: string)
     {
-
+        return this.resolve(abstract)
     }
 
-    public static Inject(classTarget: any, method: string | symbol)
+    public callMethodBinding(method: string, instance: unknown)
     {
-        let classDotMethod = `${classTarget.constructor.name}.${String(method)}`;
-        let arr: string[] = [];
-        for (let type of Reflect.getMetadata("design:paramtypes", classTarget, method))
+    }
+
+
+    private resolve<T>(abstract: string, parameters: unknown = [])
+    {
+        let concrete = this.bindings.get(abstract);
+
+        if (!concrete) return;
+
+        let params = Container.getParameters(concrete);
+
+        let injections: unknown[] = params.map((value: unknown) => this.resolve(value as string));
+
+        if (!this.isNewable(concrete)) return (concrete as Callback).apply(null, injections);
+
+        return new (concrete as ClassConstructor)(injections);
+    }
+
+    public static getParameters(func: Closure | ClassConstructor)
+    {
+        const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
+
+        const ARGUMENT_NAMES = /([^\s,]+)/g;
+
+        const fnStr = func.toString().replace(STRIP_COMMENTS, '');
+
+        let result = fnStr.slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
+
+        if (result === null) result = [];
+
+        return result;
+    }
+
+    public static importMapToMap(importMap: ImportMap)
+    {
+        let map = new Map<string, Closure | ClassConstructor>();
+
+        for (const key in importMap)
         {
-            arr.push(type.name);
+            let closure = importMap[key];
+
+            map.set(key, closure);
         }
-        Container.methodSignatures[classDotMethod] = arr;
+
+        return map;
     }
 
-    public static Class(classTarget: any)
+    private isNewable(concrete: ClassConstructor | Callback): boolean
     {
-        let className = classTarget.constructor.name;
-        let arr: string[] = [];
-        for (let type of Reflect.getMetadata("design:paramtypes", classTarget))
-        {
-            arr.push(type.name);
-        }
-        Container.constructorSignatures[className] = arr;
-        console.log(classTarget);
+        const STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
+
+        const fnStr = concrete.toString().replace(STRIP_COMMENTS, '');
+
+        return fnStr.includes("class", 0);
     }
-
-}
-
-interface ContainerArray
-{
-    [name: string]: Closure;
-}
-
-interface MethodSignatureArray
-{
-    [name: string]: string[];
 }

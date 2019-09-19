@@ -1,12 +1,10 @@
-import { Closure } from "../Interfaces/Types";
+import { Callback, method } from "../Interfaces/Types";
 
 export class Route
 {
-    public uri: string = "";
-    public callback: string | Closure = "";
-
-    public static middleware(name: string)
+    constructor(public uri: string, public method: method, public action: string | Callback)
     {
-        
+
     }
+
 }

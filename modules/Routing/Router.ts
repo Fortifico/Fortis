@@ -1,267 +1,109 @@
-import { IncomingMessage } from "http";
-import { Application } from "../Application";
-import { Closure, Callable, Action, Attributes } from "../Interfaces/Types";
-import { Controller } from "./Controller";
-import { View } from "../View";
+import { Callback, ImportMap } from "../Interfaces/Types";
+import { IncomingMessage, ServerResponse } from "http";
+import { Container } from "../Container/Container";
+import { Route } from "./Route";
+
 
 export class Router
 {
 
-    public app: Application;
+    private routes = new Array<Route>();
 
-    protected groupStack: Attributes = new Map();
-
-    protected routes: Map<string, Map<string, Action>> = new Map();
-
-    protected namedRoutes: Map<string, string> = new Map();
-
-
-    constructor(app: Application)
+    constructor(private container: Container)
     {
-        this.app = app;
-
-        // tempory before public folder is added to route resolution.
-        this.get("/favicon.ico", () => { return "favicon.ico" });
     }
 
 
-    public group(attributes: Attributes, callback: Closure)
+    public registerControllers(controllers: ImportMap)
     {
-        let middleware = attributes.get("middleware");
+        const controllerMap = Container.importMapToMap(controllers);
 
-        if (middleware && typeof middleware === "string")
+        controllerMap.forEach((controllerClass, controllerName) =>
         {
-            attributes.set("middleware", middleware.split("|"));
-        }
-
-        this.updateGroupStack(attributes);
-
-        this.groupStack = attributes;
-        callback.call(null, this)
-
-        // let lastKey = Array.from(this.groupStack).pop();
-        // console.log(lastKey);
-        // this.groupStack.delete(lastKey)
-
+            this.container.bind(`Controllers/${controllerName}`, controllerClass)
+        });
     }
 
-    protected updateGroupStack(attributes: Attributes)
+    public registerMiddleware(middleware: ImportMap)
     {
-        if (this.groupStack.size !== 0)
-        {
-            attributes = this.mergeWithLastGroup(attributes);
-        }
+        const middlewareMap = Container.importMapToMap(middleware);
 
-        this.groupStack = new Map([...this.groupStack, ...attributes]);
+        middlewareMap.forEach((middlewareClass, middlewareName) =>
+        {
+            this.container.bind(`Middleware/${middlewareName}`, middlewareClass);
+        });
     }
 
-    public mergeGroup(newAttributes: Attributes, oldAttributes: Attributes)
+    public dispatch(request: IncomingMessage, response: ServerResponse)
     {
-        newAttributes.set("namespace", Router.formatUsesPrefix(newAttributes, oldAttributes));
+        const route = this.matchRoute(request);
 
-        newAttributes.set("prefix", Router.formatGroupPrefix(newAttributes, oldAttributes));
-
-        if (newAttributes.has("domain"))
-        {
-            oldAttributes.delete("domain");
-        }
-
-        // if(oldAttributes.has("as"))
-        // {
-        //     newAttributes.set("as", oldAttributes.get("as").(newAttributes.has("as") ? "."+newAttributes.get("as": "")));
-        // }
-
-        let oldSuffix = oldAttributes.get("suffix")
-
-        if (oldSuffix && !(newAttributes.has("suffix")))
-        {
-            newAttributes.set("suffix", oldSuffix);
-        }
-
-        return new Map([...oldAttributes, ...newAttributes]);
-    }
-
-    public dispatch(request: IncomingMessage)
-    {
-        let route = this.matchRoute(request);
-
-        if (!route) return "Error 404";
+        if (!route) return "404";
 
         return this.handleFoundRoute(route)
     }
 
-    protected matchRoute(request: IncomingMessage)
-    {
-        let method = request.method;
-        let url = request.url;
-        if (typeof method !== "string") return;
-        if (typeof url !== "string") return;
 
-        return this.getRoutes().get(method + url);
+    public get(uri: string, action: string | Callback)
+    {
+        this.routes.push(new Route(uri, "GET", action));
     }
 
-    protected handleFoundRoute(route: Map<string, Action>)
+    public post(uri: string, action: string | Callback)
     {
-        let action = route.get("action");
+        this.routes.push(new Route(uri, "POST", action));
+    }
 
-        let response;
+    public put(uri: string, action: string | Callback)
+    {
+        this.routes.push(new Route(uri, "PUT", action));
+    }
 
-        if (typeof action === 'function')
+    public patch(uri: string, action: string | Callback)
+    {
+        this.routes.push(new Route(uri, "PATCH", action));
+    }
+
+    public delete(uri: string, action: string | Callback)
+    {
+        this.routes.push(new Route(uri, "DELETE", action));
+    }
+
+
+
+
+    public resource(uri: string, action: string | Callback)
+    {
+
+    }
+
+
+    private matchRoute(request: IncomingMessage)
+    {
+        // very rudimentary matching. No uri parameters!
+        return [...this.routes].filter(route => (route.uri === request.url && route.method === request.method))[0]
+    }
+
+    private handleFoundRoute(route: Route)
+    {
+        if(typeof route.action === "function")
         {
-            let params
-            response = action.call(null);
+            const parameters = Container.getParameters(route.action);
+
+            const injections: unknown[] = parameters.map((value) => this.container.make(value));
+    
+            return route.action.apply(null, injections);
         }
 
-        if (typeof action === 'string')
-        {
-            let controllerArray = action.split("@");
+        let controllerName = route.action.split("@")[0];
 
-            let controllerName = controllerArray[0];
-            let methodName = controllerArray[1];
+        let methodName = route.action.split("@")[1];
 
-            let controller: any = this.app.make(`${controllerName}`);
+        let controller = this.container.make(controllerName)
 
-            response = controller[methodName]();
-
-        }
-
-        if (response instanceof View)
-        {
-            response = response.toString();
-        }
-
-        return response
+        //let method = this.container.makeMethod(methodName, controller);
+        
+        //return method;
     }
-
-    protected mergeWithLastGroup(newAttributes: Attributes)
-    {
-        return this.mergeGroup(newAttributes, this.groupStack);
-    }
-
-    protected static formatUsesPrefix(newAttributes: Attributes, oldAttributes: Attributes): string | null
-    {
-        return null;
-    }
-
-    protected static formatGroupPrefix(newAttributes: Attributes, oldAttributes: Attributes): string | null
-    {
-        return null;
-    }
-
-    public addRoute(method: string, uri: string, action: Action)
-    {
-
-        let parsedAction = this.parseAction(action);
-
-        let attributes = null;
-
-        // if (this.hasGroupStack())
-        // {
-        //     attributes = this.mergeWithLastGroup(new Map());
-        // }
-
-        // action 
-
-        uri = uri.trim();
-
-        let route = new Map<string, string | Action>();
-        route.set("method", method).set("uri", uri).set("action", action);
-        this.routes.set(method + uri, route);
-    }
-
-    protected parseAction(action: Action)
-    {
-        let parsedAction: Action = new Map();
-        if (typeof action == "string")
-        {
-            return parsedAction.set("uses", action)
-        } else if (!(action instanceof Map))
-        {
-            return parsedAction.set(0, action)
-        }
-
-        // if(action.has("middlware") && typeof action.get("middleware") == 'string')
-        // {
-        //     parsedAction.set("middleware", action.get("middleware").split("|"));
-        // }
-
-        return parsedAction;
-    }
-
-    public hasGroupStack()
-    {
-        return this.groupStack.size !== 0;
-    }
-
-    protected mergeGroupAttributes(action: unknown[], attributes: unknown[])
-    {
-
-    }
-
-    protected mergeNamespaceGroup(action: unknown[], namespace = null)
-    {
-
-    }
-
-    // protected prependGroupNamespace(class: string, namespace = null)
-    // {
-    //     // return namespace !== null && strpos(class, '\\') !== 0
-    //     //     ? namespace.'\\'.class : class;
-    // }
-
-    protected mergeMiddlewareGroup(action: unknown[], middleware = null)
-    {
-
-    }
-
-    protected mergeAsGroup(action: unknown[], as = null)
-    {
-
-    }
-
-    public head(uri: string, action: unknown)
-    {
-
-    }
-
-    public get(uri: string, action: Action)
-    {
-        this.addRoute('GET', uri, action);
-
-        return this;
-    }
-
-    public post(uri: string, action: unknown)
-    {
-
-    }
-
-    public put(uri: string, action: unknown)
-    {
-
-    }
-
-    public patch(uri: string, action: unknown)
-    {
-
-    }
-
-    public delete(uri: string, action: unknown)
-    {
-
-    }
-
-    public options(uri: string, action: unknown)
-    {
-
-    }
-
-    public getRoutes()
-    {
-        return this.routes;
-
-    }
-
-
 }
 
